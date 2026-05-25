@@ -1,3 +1,5 @@
 def fallback_response():
 
-    return "Information not available in uploaded documents."
+    return (
+        "Information not available in uploaded documents."
+    )

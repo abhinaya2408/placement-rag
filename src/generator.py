@@ -4,14 +4,16 @@ from src.llm import generate_llm_response
 def generate_answer(query, context):
 
     prompt = f"""
-    {SYSTEM_PROMPT}
+{SYSTEM_PROMPT}
 
-    Context:
-    {context}
+Retrieved Context:
+{context}
 
-    Question:
-    {query}
-    """
+User Question:
+{query}
+
+Generate a professional answer strictly from the retrieved context.
+"""
 
     response = generate_llm_response(prompt)
 

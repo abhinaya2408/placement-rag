@@ -55,6 +55,14 @@ st.caption(
 st.divider()
 
 # ---------------------------------------------------
+# SESSION CHAT HISTORY
+# ---------------------------------------------------
+
+if "messages" not in st.session_state:
+
+    st.session_state.messages = []
+
+# ---------------------------------------------------
 # INITIALIZE VECTORSTORE
 # ---------------------------------------------------
 
@@ -80,6 +88,7 @@ with st.sidebar:
     ]
 
     for stage in stages:
+
         st.success(stage)
 
     st.divider()
@@ -89,7 +98,6 @@ with st.sidebar:
     features = [
         "Persistent ChromaDB",
         "Hybrid Retrieval",
-        "Redis Cache",
         "Conversation Memory",
         "Cross Encoder Reranking",
         "Grounded Generation",
@@ -99,6 +107,7 @@ with st.sidebar:
     ]
 
     for feature in features:
+
         st.info(feature)
 
     st.divider()
@@ -121,6 +130,36 @@ with st.sidebar:
     )
 
 # ---------------------------------------------------
+# DISPLAY CHAT HISTORY
+# ---------------------------------------------------
+
+for message in st.session_state.messages:
+
+    with st.chat_message(message["role"]):
+
+        st.write(message["content"])
+
+# ---------------------------------------------------
+# EXAMPLE QUESTIONS
+# ---------------------------------------------------
+
+if len(st.session_state.messages) == 0:
+
+    st.info(
+        "Ask placement related questions like eligibility, packages, hiring trends, interview rounds, and company comparisons."
+    )
+
+    st.subheader("💡 Example Questions")
+
+    st.markdown("""
+    - Which companies allow 2 backlogs?
+    - Compare Amazon and TCS eligibility
+    - Which company offers highest package?
+    - What is Amazon package?
+    - Does Microsoft allow backlogs?
+    """)
+
+# ---------------------------------------------------
 # CHAT INPUT
 # ---------------------------------------------------
 
@@ -134,9 +173,17 @@ query = st.chat_input(
 
 if query:
 
-    # USER MESSAGE
+    # STORE USER MESSAGE
+
+    st.session_state.messages.append({
+        "role": "user",
+        "content": query
+    })
+
+    # DISPLAY USER MESSAGE
 
     with st.chat_message("user"):
+
         st.write(query)
 
     # RUN PIPELINE
@@ -170,9 +217,18 @@ if query:
 
         else:
 
-            st.warning("No retrieved chunks available.")
+            st.warning(
+                "No retrieved chunks available."
+            )
 
-    # FINAL ANSWER
+    # STORE ASSISTANT MESSAGE
+
+    st.session_state.messages.append({
+        "role": "assistant",
+        "content": result["answer"]
+    })
+
+    # DISPLAY ASSISTANT MESSAGE
 
     with st.chat_message("assistant"):
 
@@ -190,24 +246,6 @@ if query:
 
         else:
 
-            st.warning("No sources available.")
-
-# ---------------------------------------------------
-# DEFAULT SCREEN
-# ---------------------------------------------------
-
-else:
-
-    st.info(
-        "Ask placement related questions like eligibility, packages, hiring trends, interview rounds, and company comparisons."
-    )
-
-    st.subheader("💡 Example Questions")
-
-    st.markdown("""
-    - Which companies allow 2 backlogs?
-    - Compare Amazon and TCS eligibility
-    - Which company offers highest package?
-    - What is Amazon package?
-    - Does Microsoft allow backlogs?
-    """)
+            st.warning(
+                "No sources available."
+            )
