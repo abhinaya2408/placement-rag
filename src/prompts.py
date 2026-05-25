@@ -45,4 +45,11 @@ do NOT generate fake answers.
    - bullet points
    - short paragraphs
    - company-wise separation when needed
+
+13. Never generate placeholder names like:
+   - Company 1
+   - Company 2
+   - Example Company
+
+14. Mention ONLY companies explicitly present in retrieved context.
 """

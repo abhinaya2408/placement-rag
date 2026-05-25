@@ -11,6 +11,11 @@ from src.retriever import MetadataRetriever
 from src.formatter import format_response
 from src.deduplicator import deduplicate_docs
 
+from src.reasoning import (
+    is_reasoning_query,
+    run_reasoning
+)
+
 def run_pipeline(query, vectordb):
 
     # ---------------------------------------------------
@@ -64,7 +69,9 @@ def run_pipeline(query, vectordb):
         "Accenture"
     ]
 
+    # ---------------------------------------------------
     # DETECT COMPANY
+    # ---------------------------------------------------
 
     for c in companies:
 
@@ -122,12 +129,31 @@ def run_pipeline(query, vectordb):
     )
 
     # ---------------------------------------------------
-    # INSERT CONTEXT
+    # REASONING ENGINE
     # ---------------------------------------------------
 
-    context = insert_context(
-        refined_docs
-    )
+    if is_reasoning_query(rewritten_query):
+
+        reasoning_context = run_reasoning(
+            rewritten_query,
+            refined_docs
+        )
+
+        if reasoning_context:
+
+            context = reasoning_context
+
+        else:
+
+            context = insert_context(
+                refined_docs
+            )
+
+    else:
+
+        context = insert_context(
+            refined_docs
+        )
 
     # ---------------------------------------------------
     # EMPTY CONTEXT
