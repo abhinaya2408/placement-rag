@@ -7,10 +7,14 @@ from src.citations import extract_sources
 from src.cache_manager import get_cache, set_cache
 from src.fallback import fallback_response
 from src.memory import save_memory
+from src.retriever import MetadataRetriever
+from src.formatter import format_response
 
 def run_pipeline(query, vectordb):
 
-    # ---------------- CACHE ----------------
+    # ---------------------------------------------------
+    # CACHE CHECK
+    # ---------------------------------------------------
 
     cached_response = get_cache(query)
 
@@ -23,18 +27,61 @@ def run_pipeline(query, vectordb):
             "sources": []
         }
 
-    # ---------------- QUERY REWRITE ----------------
+    # ---------------------------------------------------
+    # QUERY REWRITE
+    # ---------------------------------------------------
 
     rewritten_query = rewrite_query(query)
 
-    # ---------------- RETRIEVAL ----------------
+    # ---------------------------------------------------
+    # METADATA RETRIEVAL
+    # ---------------------------------------------------
 
-    docs = vectordb.similarity_search(
+    retriever = MetadataRetriever(vectordb)
+
+    company = None
+
+    companies = [
+        "Amazon",
+        "TCS",
+        "Infosys",
+        "Google",
+        "Microsoft",
+        "Wipro",
+        "Flipkart",
+        "Deloitte",
+        "IBM",
+        "HCL",
+        "Qualcomm",
+        "Samsung",
+        "Oracle",
+        "Adobe",
+        "SAP",
+        "Tech Mahindra",
+        "Capgemini",
+        "Cognizant"
+    ]
+
+    # DETECT COMPANY
+
+    for c in companies:
+
+        if c.lower() in rewritten_query.lower():
+
+            company = c
+
+            break
+
+    # RETRIEVE DOCUMENTS
+
+    docs = retriever.retrieve(
         rewritten_query,
-        k=5
+        company=company
     )
 
-    # ---------------- NO DOCUMENTS ----------------
+    # ---------------------------------------------------
+    # NO DOCUMENTS
+    # ---------------------------------------------------
 
     if not docs:
 
@@ -45,26 +92,34 @@ def run_pipeline(query, vectordb):
             "sources": []
         }
 
-    # ---------------- RERANK ----------------
+    # ---------------------------------------------------
+    # RERANK
+    # ---------------------------------------------------
 
     reranked_docs = rerank(
         rewritten_query,
         docs
     )
 
-    # ---------------- REFINE ----------------
+    # ---------------------------------------------------
+    # REFINE
+    # ---------------------------------------------------
 
     refined_docs = refine_documents(
         reranked_docs
     )
 
-    # ---------------- INSERT CONTEXT ----------------
+    # ---------------------------------------------------
+    # INSERT CONTEXT
+    # ---------------------------------------------------
 
     context = insert_context(
         refined_docs
     )
 
-    # ---------------- EMPTY CONTEXT ----------------
+    # ---------------------------------------------------
+    # EMPTY CONTEXT
+    # ---------------------------------------------------
 
     if not context.strip():
 
@@ -75,29 +130,52 @@ def run_pipeline(query, vectordb):
             "sources": []
         }
 
-    # ---------------- GENERATE ----------------
+    # ---------------------------------------------------
+    # GENERATE RAW ANSWER
+    # ---------------------------------------------------
 
-    answer = generate_answer(
+    raw_answer = generate_answer(
         rewritten_query,
         context
     )
 
-    # ---------------- MEMORY SAVE ----------------
+    # ---------------------------------------------------
+    # FORMAT ANSWER
+    # ---------------------------------------------------
+
+    answer = format_response(
+        raw_answer
+    )
+
+    # ---------------------------------------------------
+    # SAVE MEMORY
+    # ---------------------------------------------------
 
     save_memory(
         rewritten_query,
         answer
     )
 
-    # ---------------- CACHE SAVE ----------------
+    # ---------------------------------------------------
+    # SAVE CACHE
+    # ---------------------------------------------------
 
-    set_cache(query, answer)
+    set_cache(
+        query,
+        answer
+    )
 
-    # ---------------- SOURCES ----------------
+    # ---------------------------------------------------
+    # SOURCES
+    # ---------------------------------------------------
 
     sources = extract_sources(
         refined_docs
     )
+
+    # ---------------------------------------------------
+    # FINAL RESPONSE
+    # ---------------------------------------------------
 
     return {
         "rewritten_query": rewritten_query,

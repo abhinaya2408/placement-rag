@@ -23,8 +23,7 @@ NOISE_PATTERNS = [
     "E2",
     "Hop Type",
     "Reasoning Chain",
-    "Question",
-    "Compare TCS and Infosys"
+    "Question"
 ]
 
 def is_noisy(text):
@@ -36,6 +35,34 @@ def is_noisy(text):
 
     return False
 
+def detect_company(text):
+
+    for company in COMPANIES:
+
+        if company.lower() in text.lower():
+
+            return company
+
+    return "Unknown"
+
+def detect_section(text):
+
+    text = text.lower()
+
+    if "cgpa" in text or "backlog" in text:
+
+        return "Eligibility"
+
+    if "package" in text or "lpa" in text:
+
+        return "Package"
+
+    if "round" in text or "interview" in text:
+
+        return "Interview"
+
+    return "General"
+
 def smart_chunk_documents(docs):
 
     smart_chunks = []
@@ -43,8 +70,6 @@ def smart_chunk_documents(docs):
     for doc in docs:
 
         text = doc.page_content
-
-        # SPLIT BY COMPANY NAMES
 
         sections = re.split(
             r'(?=(' + '|'.join(COMPANIES) + r'))',
@@ -65,19 +90,18 @@ def smart_chunk_documents(docs):
             if is_noisy(section):
                 continue
 
-            # KEEP ONLY COMPANY RELATED CHUNKS
+            company = detect_company(section)
 
-            contains_company = any(
-                company.lower() in section.lower()
-                for company in COMPANIES
-            )
-
-            if not contains_company:
+            if company == "Unknown":
                 continue
+
+            section_type = detect_section(section)
 
             chunk_data = {
                 "content": section,
                 "metadata": {
+                    "company": company,
+                    "section": section_type,
                     "page": doc.metadata.get("page", "N/A")
                 }
             }

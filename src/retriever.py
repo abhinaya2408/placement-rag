@@ -1,40 +1,43 @@
-from rank_bm25 import BM25Okapi
+class MetadataRetriever:
 
-class HybridRetriever:
-
-    def __init__(self, vectordb, chunks):
+    def __init__(self, vectordb):
 
         self.vectordb = vectordb
 
-        self.text_chunks = [
-            doc.page_content
-            for doc in chunks
-        ]
+    def retrieve(self, query, company=None):
 
-        tokenized_chunks = [
-            text.split()
-            for text in self.text_chunks
-        ]
+        # -----------------------------------
+        # METADATA FILTER RETRIEVAL
+        # -----------------------------------
 
-        self.bm25 = BM25Okapi(tokenized_chunks)
+        if company:
 
-    def semantic_search(self, query, k=5):
+            docs = self.vectordb.similarity_search(
+                query,
+                k=5,
+                filter={
+                    "company": company
+                }
+            )
 
-        return self.vectordb.similarity_search(
-            query,
-            k=k
-        )
+            # FALLBACK TO NORMAL SEARCH
 
-    def keyword_search(self, query, k=5):
+            if len(docs) == 0:
 
-        scores = self.bm25.get_scores(
-            query.split()
-        )
+                docs = self.vectordb.similarity_search(
+                    query,
+                    k=5
+                )
 
-        ranked = sorted(
-            zip(self.text_chunks, scores),
-            key=lambda x: x[1],
-            reverse=True
-        )
+        # -----------------------------------
+        # NORMAL RETRIEVAL
+        # -----------------------------------
 
-        return ranked[:k]
+        else:
+
+            docs = self.vectordb.similarity_search(
+                query,
+                k=5
+            )
+
+        return docs
