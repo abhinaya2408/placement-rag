@@ -3,6 +3,7 @@ from src.memory import get_last_context
 FOLLOWUP_WORDS = [
     "eligibility",
     "package",
+    "packages",
     "backlogs",
     "bond",
     "rounds",
@@ -22,24 +23,6 @@ COMPANIES = [
     "flipkart"
 ]
 
-def is_followup_query(query):
-
-    query = query.lower().strip()
-
-    # VERY SHORT QUERY
-
-    if len(query.split()) <= 2:
-        return True
-
-    # FOLLOWUP WORDS
-
-    for word in FOLLOWUP_WORDS:
-
-        if word in query:
-            return True
-
-    return False
-
 def contains_company(query):
 
     query = query.lower()
@@ -53,25 +36,48 @@ def contains_company(query):
 
 def rewrite_query(query):
 
-    query = query.strip()
+    query = query.strip().lower()
 
     last_context = get_last_context()
 
-    # IF QUERY ALREADY HAS COMPANY
-    # DO NOT APPEND OLD CONTEXT
+    # ---------------------------------------------------
+    # COMPANY QUERY
+    # ---------------------------------------------------
 
     if contains_company(query):
 
         return query
 
-    # FOLLOWUP DETECTION
+    # ---------------------------------------------------
+    # PACKAGE FOLLOW-UP
+    # ---------------------------------------------------
 
-    if is_followup_query(query):
+    if "highest package" in query or "high package" in query:
+
+        return "companies with highest packages"
+
+    if "avg package" in query or "average package" in query:
+
+        return "average packages of all companies"
+
+    # ---------------------------------------------------
+    # SHORT FOLLOW-UP
+    # ---------------------------------------------------
+
+    if len(query.split()) <= 2:
 
         if last_context:
 
+            # SMART REPLACEMENT
+
+            if "package" in query:
+
+                return query
+
             return f"{last_context} {query}"
 
-    # NEW TOPIC DETECTED
+    # ---------------------------------------------------
+    # NORMAL QUERY
+    # ---------------------------------------------------
 
     return query

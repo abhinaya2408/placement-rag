@@ -9,6 +9,7 @@ from src.fallback import fallback_response
 from src.memory import save_memory
 from src.retriever import MetadataRetriever
 from src.formatter import format_response
+from src.deduplicator import deduplicate_docs
 
 def run_pipeline(query, vectordb):
 
@@ -59,7 +60,8 @@ def run_pipeline(query, vectordb):
         "SAP",
         "Tech Mahindra",
         "Capgemini",
-        "Cognizant"
+        "Cognizant",
+        "Accenture"
     ]
 
     # DETECT COMPANY
@@ -72,7 +74,9 @@ def run_pipeline(query, vectordb):
 
             break
 
+    # ---------------------------------------------------
     # RETRIEVE DOCUMENTS
+    # ---------------------------------------------------
 
     docs = retriever.retrieve(
         rewritten_query,
@@ -107,6 +111,14 @@ def run_pipeline(query, vectordb):
 
     refined_docs = refine_documents(
         reranked_docs
+    )
+
+    # ---------------------------------------------------
+    # DEDUPLICATION
+    # ---------------------------------------------------
+
+    refined_docs = deduplicate_docs(
+        refined_docs
     )
 
     # ---------------------------------------------------
