@@ -1,83 +1,53 @@
-from src.memory import get_last_context
+from src.memory import get_last_query
 
-FOLLOWUP_WORDS = [
-    "eligibility",
-    "package",
-    "packages",
-    "backlogs",
-    "bond",
-    "rounds",
-    "salary",
-    "cgpa",
-    "interview",
-    "criteria"
-]
-
-COMPANIES = [
-    "amazon",
-    "tcs",
-    "infosys",
-    "google",
-    "microsoft",
-    "wipro",
-    "flipkart"
-]
-
-def contains_company(query):
-
-    query = query.lower()
-
-    for company in COMPANIES:
-
-        if company in query:
-            return True
-
-    return False
 
 def rewrite_query(query):
 
-    query = query.strip().lower()
+    query = query.strip()
 
-    last_context = get_last_context()
+    lower_query = query.lower()
 
-    # ---------------------------------------------------
-    # COMPANY QUERY
-    # ---------------------------------------------------
+    # -----------------------------------------
+    # FOLLOW-UP SHORT QUERIES
+    # -----------------------------------------
 
-    if contains_company(query):
+    short_followups = [
+        "package",
+        "salary",
+        "cgpa",
+        "cutoff",
+        "backlog",
+        "offers",
+        "eligibility",
+        "what about",
+        "in tcs",
+        "in amazon",
+        "in google"
+    ]
 
-        return query
+    # -----------------------------------------
+    # ONLY USE MEMORY
+    # FOR VERY SHORT QUERIES
+    # -----------------------------------------
 
-    # ---------------------------------------------------
-    # PACKAGE FOLLOW-UP
-    # ---------------------------------------------------
+    if len(query.split()) <= 3:
 
-    if "highest package" in query or "high package" in query:
+        for word in short_followups:
 
-        return "companies with highest packages"
+            if word in lower_query:
 
-    if "avg package" in query or "average package" in query:
+                previous_query = get_last_query()
 
-        return "average packages of all companies"
+                if previous_query:
 
-    # ---------------------------------------------------
-    # SHORT FOLLOW-UP
-    # ---------------------------------------------------
+                    return (
+                        previous_query
+                        + " "
+                        + query
+                    )
 
-    if len(query.split()) <= 2:
-
-        if last_context:
-
-            # SMART REPLACEMENT
-
-            if "package" in query:
-
-                return query
-
-            return f"{last_context} {query}"
-
-    # ---------------------------------------------------
-    # NORMAL QUERY
-    # ---------------------------------------------------
+    # -----------------------------------------
+    # OTHERWISE RETURN ORIGINAL QUERY
+    # -----------------------------------------
 
     return query

@@ -10,6 +10,7 @@ from src.memory import save_memory
 from src.retriever import MetadataRetriever
 from src.formatter import format_response
 from src.deduplicator import deduplicate_docs
+from src.retrieval_filter import filter_retrieved_docs
 
 from src.reasoning import (
     is_reasoning_query,
@@ -17,6 +18,7 @@ from src.reasoning import (
 )
 
 from src.conflict_detector import detect_conflicts
+from src.confidence import calculate_confidence
 
 
 def run_pipeline(query, vectordb):
@@ -33,7 +35,8 @@ def run_pipeline(query, vectordb):
             "rewritten_query": query,
             "docs": [],
             "answer": cached_response,
-            "sources": []
+            "sources": [],
+            "confidence": 95
         }
 
     # ---------------------------------------------------
@@ -41,6 +44,10 @@ def run_pipeline(query, vectordb):
     # ---------------------------------------------------
 
     rewritten_query = rewrite_query(query)
+
+    if not rewritten_query.strip():
+
+        rewritten_query = query
 
     # ---------------------------------------------------
     # METADATA RETRIEVAL
@@ -50,37 +57,38 @@ def run_pipeline(query, vectordb):
 
     company = None
 
-    companies = [
-        "Amazon",
-        "TCS",
-        "Infosys",
-        "Google",
-        "Microsoft",
-        "Wipro",
-        "Flipkart",
-        "Deloitte",
-        "IBM",
-        "HCL",
-        "Qualcomm",
-        "Samsung",
-        "Oracle",
-        "Adobe",
-        "SAP",
-        "Tech Mahindra",
-        "Capgemini",
-        "Cognizant",
-        "Accenture"
-    ]
+    companies = {
+        "amazon": "Amazon",
+        "tcs": "TCS",
+        "infosys": "Infosys",
+        "google": "Google",
+        "microsoft": "Microsoft",
+        "wipro": "Wipro",
+        "flipkart": "Flipkart",
+        "deloitte": "Deloitte",
+        "ibm": "IBM",
+        "hcl": "HCL",
+        "qualcomm": "Qualcomm",
+        "samsung": "Samsung",
+        "oracle": "Oracle",
+        "adobe": "Adobe",
+        "sap": "SAP",
+        "tech mahindra": "Tech Mahindra",
+        "mahindra": "Tech Mahindra",
+        "cognizant": "Cognizant",
+        "capgemini": "Capgemini",
+        "accenture": "Accenture"
+    }
 
     # ---------------------------------------------------
     # DETECT COMPANY
     # ---------------------------------------------------
 
-    for c in companies:
+    for alias, actual_name in companies.items():
 
-        if c.lower() in rewritten_query.lower():
+        if alias in rewritten_query.lower():
 
-            company = c
+            company = actual_name
 
             break
 
@@ -103,7 +111,8 @@ def run_pipeline(query, vectordb):
             "rewritten_query": rewritten_query,
             "docs": [],
             "answer": fallback_response(),
-            "sources": []
+            "sources": [],
+            "confidence": 0
         }
 
     # ---------------------------------------------------
@@ -130,6 +139,28 @@ def run_pipeline(query, vectordb):
     refined_docs = deduplicate_docs(
         refined_docs
     )
+
+    # ---------------------------------------------------
+    # RETRIEVAL FILTERING
+    # ---------------------------------------------------
+
+    refined_docs = filter_retrieved_docs(
+        refined_docs
+    )
+
+    # ---------------------------------------------------
+    # EMPTY AFTER FILTER
+    # ---------------------------------------------------
+
+    if not refined_docs:
+
+        return {
+            "rewritten_query": rewritten_query,
+            "docs": [],
+            "answer": fallback_response(),
+            "sources": [],
+            "confidence": 0
+        }
 
     # ---------------------------------------------------
     # CONFLICT DETECTION
@@ -177,11 +208,12 @@ def run_pipeline(query, vectordb):
             "rewritten_query": rewritten_query,
             "docs": [],
             "answer": fallback_response(),
-            "sources": []
+            "sources": [],
+            "confidence": 0
         }
 
     # ---------------------------------------------------
-    # GENERATE RAW ANSWER
+    # GENERATE ANSWER
     # ---------------------------------------------------
 
     raw_answer = generate_answer(
@@ -190,7 +222,7 @@ def run_pipeline(query, vectordb):
     )
 
     # ---------------------------------------------------
-    # FORMAT ANSWER
+    # FORMAT RESPONSE
     # ---------------------------------------------------
 
     answer = format_response(
@@ -209,9 +241,17 @@ def run_pipeline(query, vectordb):
 
             answer += (
                 f"\n• {conflict['company']} "
-                f"has multiple CGPA values: "
+                f"has multiple values: "
                 f"{conflict['values']}"
             )
+
+    # ---------------------------------------------------
+    # CONFIDENCE SCORE
+    # ---------------------------------------------------
+
+    confidence = calculate_confidence(
+        refined_docs
+    )
 
     # ---------------------------------------------------
     # SAVE MEMORY
@@ -247,5 +287,6 @@ def run_pipeline(query, vectordb):
         "rewritten_query": rewritten_query,
         "docs": refined_docs,
         "answer": answer,
-        "sources": sources
+        "sources": sources,
+        "confidence": confidence
     }

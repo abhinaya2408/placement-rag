@@ -5,11 +5,12 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 
 from src.table_extractor import extract_tables
+from src.ocr_extractor import extract_ocr_text
 
 import os
 
 
-PERSIST_DIRECTORY = "chroma_db"
+PERSIST_DIRECTORY = "chroma_db_new"
 
 
 def initialize_vectorstore():
@@ -17,7 +18,7 @@ def initialize_vectorstore():
     pdf_path = "data/Placement_RAG_Dataset_Enhanced.pdf"
 
     # ---------------------------------------------------
-    # LOAD PDF TEXT
+    # LOAD NORMAL PDF TEXT
     # ---------------------------------------------------
 
     loader = PyPDFLoader(pdf_path)
@@ -33,6 +34,16 @@ def initialize_vectorstore():
     )
 
     documents.extend(table_docs)
+
+    # ---------------------------------------------------
+    # OCR EXTRACTION
+    # ---------------------------------------------------
+
+    ocr_docs = extract_ocr_text(
+        pdf_path
+    )
+
+    documents.extend(ocr_docs)
 
     # ---------------------------------------------------
     # SMART CHUNKING
@@ -108,7 +119,7 @@ def initialize_vectorstore():
     )
 
     # ---------------------------------------------------
-    # PERSISTENT CHROMADB
+    # CREATE CHROMADB
     # ---------------------------------------------------
 
     vectordb = Chroma.from_documents(

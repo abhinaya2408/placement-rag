@@ -5,6 +5,7 @@ langchain-core
 langchain-chroma
 langchain-huggingface
 langchain-text-splitters
+langchain-groq
 
 chromadb
 
@@ -26,3 +27,7 @@ python-dotenv
 
 scikit-learn
 numpy
+
+pytesseract
+pdf2image
+pillow

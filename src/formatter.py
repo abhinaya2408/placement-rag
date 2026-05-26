@@ -1,53 +1,35 @@
-import re
-
 def format_response(answer):
+
+    if not answer:
+        return answer
+
+    # -----------------------------------------
+    # REMOVE EXTRA NEWLINES
+    # -----------------------------------------
+
+    answer = answer.replace(
+        "\n\n\n",
+        "\n\n"
+    )
+
+    # -----------------------------------------
+    # REMOVE DUPLICATE BULLETS
+    # -----------------------------------------
 
     lines = answer.split("\n")
 
-    formatted_lines = []
+    cleaned = []
+
+    seen = set()
 
     for line in lines:
 
-        line = line.strip()
+        stripped = line.strip()
 
-        if not line:
-            continue
+        if stripped and stripped not in seen:
 
-        # PACKAGE / COMPANY FORMATTING
+            cleaned.append(line)
 
-        if ":" in line and "LPA" in line:
+            seen.add(stripped)
 
-            parts = line.split(":")
-
-            if len(parts) >= 2:
-
-                company = parts[0].strip()
-
-                value = ":".join(parts[1:]).strip()
-
-                formatted_lines.append(
-                    f"• {company} → {value}"
-                )
-
-            else:
-
-                formatted_lines.append(line)
-
-        # BULLET FORMATTING
-
-        elif (
-            "CGPA" in line
-            or "Backlog" in line
-            or "Package" in line
-            or "Bond" in line
-        ):
-
-            formatted_lines.append(
-                f"• {line}"
-            )
-
-        else:
-
-            formatted_lines.append(line)
-
-    return "\n".join(formatted_lines)
+    return "\n".join(cleaned)

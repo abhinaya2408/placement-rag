@@ -234,6 +234,13 @@ if query:
 
         st.write(result["answer"])
 
+    # ---------------------------------------------------
+    # CONFIDENCE SCORE
+    # ---------------------------------------------------
+
+    st.markdown(
+        f"### ✅ Confidence Score: {result['confidence']}%"
+    )
     # SOURCES
 
     with st.expander("📌 Sources"):

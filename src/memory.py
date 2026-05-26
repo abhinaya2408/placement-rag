@@ -1,21 +1,41 @@
-chat_history = []
+conversation_memory = []
 
-def save_memory(user_query, assistant_answer):
 
-    chat_history.append({
-        "query": user_query,
-        "answer": assistant_answer
+# ---------------------------------------------------
+# SAVE MEMORY
+# ---------------------------------------------------
+
+def save_memory(query, answer):
+
+    conversation_memory.append({
+        "query": query,
+        "answer": answer
     })
 
-def load_memory():
+    # KEEP ONLY LAST 5 CONVERSATIONS
 
-    return chat_history
+    if len(conversation_memory) > 5:
 
-def get_last_context():
+        conversation_memory.pop(0)
 
-    if len(chat_history) == 0:
-        return ""
 
-    last_item = chat_history[-1]
+# ---------------------------------------------------
+# GET LAST QUERY
+# ---------------------------------------------------
 
-    return last_item["query"]
+def get_last_query():
+
+    if not conversation_memory:
+
+        return None
+
+    return conversation_memory[-1]["query"]
+
+
+# ---------------------------------------------------
+# GET MEMORY
+# ---------------------------------------------------
+
+def get_memory():
+
+    return conversation_memory
