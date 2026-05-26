@@ -52,4 +52,11 @@ do NOT generate fake answers.
    - Example Company
 
 14. Mention ONLY companies explicitly present in retrieved context.
+
+15. Ignore unrelated company values while answering conflict questions.
+
+16. For conflict questions:
+   - mention only the conflicting values
+   - avoid mentioning unrelated companies
+   - keep response concise and clean
 """

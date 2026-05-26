@@ -16,6 +16,9 @@ from src.reasoning import (
     run_reasoning
 )
 
+from src.conflict_detector import detect_conflicts
+
+
 def run_pipeline(query, vectordb):
 
     # ---------------------------------------------------
@@ -129,6 +132,15 @@ def run_pipeline(query, vectordb):
     )
 
     # ---------------------------------------------------
+    # CONFLICT DETECTION
+    # ---------------------------------------------------
+
+    conflicts = detect_conflicts(
+        rewritten_query,
+        refined_docs
+    )
+
+    # ---------------------------------------------------
     # REASONING ENGINE
     # ---------------------------------------------------
 
@@ -184,6 +196,22 @@ def run_pipeline(query, vectordb):
     answer = format_response(
         raw_answer
     )
+
+    # ---------------------------------------------------
+    # APPEND CONFLICT WARNINGS
+    # ---------------------------------------------------
+
+    if conflicts:
+
+        answer += "\n\n⚠️ Conflicting records detected:\n"
+
+        for conflict in conflicts:
+
+            answer += (
+                f"\n• {conflict['company']} "
+                f"has multiple CGPA values: "
+                f"{conflict['values']}"
+            )
 
     # ---------------------------------------------------
     # SAVE MEMORY
