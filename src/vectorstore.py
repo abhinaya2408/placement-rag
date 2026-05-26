@@ -1,46 +1,120 @@
-import os
-
-from langchain_community.vectorstores import Chroma
 from langchain_community.document_loaders import PyPDFLoader
-
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-from src.embeddings import load_embeddings
+from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_chroma import Chroma
 
-DB_PATH = "vectorstore/chroma_db"
+from src.table_extractor import extract_tables
 
-PDF_PATH = "data/Placement_RAG_Dataset_Enhanced.pdf"
+import os
+
+
+PERSIST_DIRECTORY = "chroma_db"
+
 
 def initialize_vectorstore():
 
-    embeddings = load_embeddings()
+    pdf_path = "data/Placement_RAG_Dataset_Enhanced.pdf"
 
-    if os.path.exists(DB_PATH):
+    # ---------------------------------------------------
+    # LOAD PDF TEXT
+    # ---------------------------------------------------
 
-        vectordb = Chroma(
-            persist_directory=DB_PATH,
-            embedding_function=embeddings
+    loader = PyPDFLoader(pdf_path)
+
+    documents = loader.load()
+
+    # ---------------------------------------------------
+    # TABLE EXTRACTION
+    # ---------------------------------------------------
+
+    table_docs = extract_tables(
+        pdf_path
+    )
+
+    documents.extend(table_docs)
+
+    # ---------------------------------------------------
+    # SMART CHUNKING
+    # ---------------------------------------------------
+
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=800,
+        chunk_overlap=150,
+        separators=[
+            "\n\n",
+            "\n",
+            ". ",
+            " "
+        ]
+    )
+
+    split_docs = text_splitter.split_documents(
+        documents
+    )
+
+    # ---------------------------------------------------
+    # METADATA TAGGING
+    # ---------------------------------------------------
+
+    companies = [
+        "Amazon",
+        "TCS",
+        "Infosys",
+        "Google",
+        "Microsoft",
+        "Wipro",
+        "Flipkart",
+        "Deloitte",
+        "IBM",
+        "HCL",
+        "Qualcomm",
+        "Samsung",
+        "Oracle",
+        "Adobe",
+        "SAP",
+        "Tech Mahindra",
+        "Capgemini",
+        "Cognizant",
+        "Accenture"
+    ]
+
+    for doc in split_docs:
+
+        content = doc.page_content.lower()
+
+        found_company = None
+
+        for company in companies:
+
+            if company.lower() in content:
+
+                found_company = company
+
+                break
+
+        doc.metadata["company"] = (
+            found_company
+            if found_company
+            else "Unknown"
         )
 
-        return vectordb
+    # ---------------------------------------------------
+    # EMBEDDINGS
+    # ---------------------------------------------------
 
-    loader = PyPDFLoader(PDF_PATH)
-
-    docs = loader.load()
-
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=500,
-        chunk_overlap=100
+    embeddings = HuggingFaceEmbeddings(
+        model_name="sentence-transformers/all-MiniLM-L6-v2"
     )
 
-    chunks = splitter.split_documents(docs)
+    # ---------------------------------------------------
+    # PERSISTENT CHROMADB
+    # ---------------------------------------------------
 
     vectordb = Chroma.from_documents(
-        documents=chunks,
+        documents=split_docs,
         embedding=embeddings,
-        persist_directory=DB_PATH
+        persist_directory=PERSIST_DIRECTORY
     )
-
-    vectordb.persist()
 
     return vectordb
