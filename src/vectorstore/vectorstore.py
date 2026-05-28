@@ -9,7 +9,7 @@ from src.ingestion.ocr_extractor import extract_ocr_text
 from src.ingestion.table_extractor import extract_tables
 
 
-CHROMA_PATH = "chroma_db"
+from src.config.settings import CHROMA_PATH
 DATA_PATH = "data"
 
 
