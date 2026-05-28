@@ -1,8 +1,7 @@
 import streamlit as st
 
-from src.vectorstore import initialize_vectorstore
+from src.vectorstore.vectorstore import initialize_vectorstore
 from src.pipeline import run_pipeline
-
 # ---------------------------------------------------
 # PAGE CONFIG
 # ---------------------------------------------------

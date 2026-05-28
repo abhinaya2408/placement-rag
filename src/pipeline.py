@@ -1,24 +1,33 @@
-from src.query_rewriter import rewrite_query
-from src.reranker import rerank
-from src.refiner import refine_documents
-from src.inserter import insert_context
-from src.generator import generate_answer
-from src.citations import extract_sources
-from src.cache_manager import get_cache, set_cache
-from src.fallback import fallback_response
-from src.memory import save_memory
-from src.retriever import MetadataRetriever
-from src.formatter import format_response
-from src.deduplicator import deduplicate_docs
-from src.retrieval_filter import filter_retrieved_docs
+from src.reasoning.query_rewriter import rewrite_query
 
-from src.reasoning import (
+from src.retrieval.retriever import retrieve_documents
+from src.retrieval.retrieval_filter import filter_retrieved_docs
+from src.retrieval.reranker import rerank
+from src.retrieval.refiner import refine_documents
+from src.retrieval.deduplicator import deduplicate_docs
+
+from src.reasoning.reasoning import (
     is_reasoning_query,
     run_reasoning
 )
 
-from src.conflict_detector import detect_conflicts
-from src.confidence import calculate_confidence
+from src.reasoning.conflict_detector import detect_conflicts
+
+from src.generation.generator import generate_answer
+from src.generation.formatter import format_response
+from src.generation.fallback import fallback_response
+
+from src.ingestion.inserter import insert_context
+
+from src.response.confidence import calculate_confidence
+from src.response.citations import extract_sources
+
+from src.memory.memory import save_memory
+
+from src.cache_manager import (
+    get_cache,
+    set_cache
+)
 
 
 def run_pipeline(query, vectordb):
@@ -50,10 +59,8 @@ def run_pipeline(query, vectordb):
         rewritten_query = query
 
     # ---------------------------------------------------
-    # METADATA RETRIEVAL
+    # DETECT COMPANY
     # ---------------------------------------------------
-
-    retriever = MetadataRetriever(vectordb)
 
     company = None
 
@@ -80,10 +87,6 @@ def run_pipeline(query, vectordb):
         "accenture": "Accenture"
     }
 
-    # ---------------------------------------------------
-    # DETECT COMPANY
-    # ---------------------------------------------------
-
     for alias, actual_name in companies.items():
 
         if alias in rewritten_query.lower():
@@ -93,16 +96,16 @@ def run_pipeline(query, vectordb):
             break
 
     # ---------------------------------------------------
-    # RETRIEVE DOCUMENTS
+    # RETRIEVAL
     # ---------------------------------------------------
 
-    docs = retriever.retrieve(
+    docs = retrieve_documents(
         rewritten_query,
         company=company
     )
 
     # ---------------------------------------------------
-    # NO DOCUMENTS
+    # EMPTY RETRIEVAL
     # ---------------------------------------------------
 
     if not docs:
@@ -116,7 +119,7 @@ def run_pipeline(query, vectordb):
         }
 
     # ---------------------------------------------------
-    # RERANK
+    # RERANKING
     # ---------------------------------------------------
 
     reranked_docs = rerank(
@@ -125,7 +128,7 @@ def run_pipeline(query, vectordb):
     )
 
     # ---------------------------------------------------
-    # REFINE
+    # REFINEMENT
     # ---------------------------------------------------
 
     refined_docs = refine_documents(
@@ -172,7 +175,7 @@ def run_pipeline(query, vectordb):
     )
 
     # ---------------------------------------------------
-    # REASONING ENGINE
+    # REASONING
     # ---------------------------------------------------
 
     if is_reasoning_query(rewritten_query):
