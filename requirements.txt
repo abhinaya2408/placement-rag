@@ -31,3 +31,5 @@ numpy
 pytesseract
 pdf2image
 pillow
+
+pip freeze > requirements.txt
