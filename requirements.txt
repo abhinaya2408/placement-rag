@@ -1,35 +1,30 @@
-streamlit
-langchain
-langchain-community
-langchain-core
-langchain-chroma
-langchain-huggingface
-langchain-text-splitters
-langchain-groq
+streamlit==1.57.0
 
-chromadb
+langchain==1.3.2
+langchain-community==0.4.2
+langchain-core==1.4.0
+langchain-groq==1.1.2
+langchain-huggingface==1.2.2
+langchain-chroma==1.1.0
 
-sentence-transformers
-transformers
-torch
+chromadb==1.5.9
+
+sentence-transformers==5.5.1
+transformers==5.9.0
+torch==2.12.0
+torchvision
+
+protobuf==3.20.3
 
 pypdf
 pdfplumber
-pandas
-
-rank-bm25
-
-redis
-
-groq
-
-python-dotenv
-
-scikit-learn
-numpy
-
 pytesseract
 pdf2image
-pillow
 
-pip freeze > requirements.txt
+python-dotenv
+groq
+
+rank-bm25
+scikit-learn
+pandas
+numpy
