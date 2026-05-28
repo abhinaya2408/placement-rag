@@ -207,23 +207,65 @@ Placement-RAG-Assistant/
 │
 ├── app.py
 ├── requirements.txt
-├── .env
-├── chroma_db/
-├── uploads/
-├── src/
-│   ├── pipeline.py
-│   ├── vectorstore.py
-│   ├── generator.py
-│   ├── retriever.py
-│   ├── query_rewriter.py
-│   ├── conflict_detector.py
-│   ├── ocr_extractor.py
-│   ├── retrieval_filter.py
-│   ├── table_extractor.py
-│   └── memory.py
+├── README.md
+├── .gitignore
 │
-├── architecture.png
-└── .gitignore
+├── data/
+├── chroma_db/
+│
+├── src/
+│   │
+│   ├── config/
+│   │   ├── __init__.py
+│   │   └── settings.py
+│   │
+│   ├── generation/
+│   │   ├── __init__.py
+│   │   ├── generator.py
+│   │   ├── llm.py
+│   │   ├── formatter.py
+│   │   ├── prompts.py
+│   │   └── fallback.py
+│   │
+│   ├── ingestion/
+│   │   ├── __init__.py
+│   │   ├── chunker.py
+│   │   ├── embeddings.py
+│   │   ├── inserter.py
+│   │   ├── ocr_extractor.py
+│   │   └── table_extractor.py
+│   │
+│   ├── memory/
+│   │   ├── __init__.py
+│   │   └── memory.py
+│   │
+│   ├── reasoning/
+│   │   ├── __init__.py
+│   │   ├── reasoning.py
+│   │   ├── query_rewriter.py
+│   │   └── conflict_detector.py
+│   │
+│   ├── response/
+│   │   ├── __init__.py
+│   │   ├── confidence.py
+│   │   ├── citations.py
+│   │   └── utils.py
+│   │
+│   ├── retrieval/
+│   │   ├── __init__.py
+│   │   ├── retriever.py
+│   │   ├── reranker.py
+│   │   ├── retrieval_filter.py
+│   │   ├── deduplicator.py
+│   │   └── refiner.py
+│   │
+│   ├── vectorstore/
+│   │   ├── __init__.py
+│   │   └── vectorstore.py
+│   │
+│   └── pipeline.py
+│
+└── .streamlit/
 ```
 
 ---
@@ -243,15 +285,12 @@ Placement-RAG-Assistant/
 
 # Future Improvements
 
-- Multimodal Chart & Graph Understanding
-- Pinecone / Weaviate Integration
-- Advanced Semantic Chunking
-- RAGAS Evaluation Framework
-- Voice-Based Querying
-- Deployment using AWS/GCP/Azure
-- Fine-Tuned Placement LLM
-- Real-Time Placement Analytics Dashboard
-- Multi-Language Support
+- Add Hybrid Retrieval using BM25 + Vector Search
+- Improve Conversational Memory Optimization
+- Support Real-Time Placement Dataset Updates
+- Add Interactive Placement Analytics Dashboard
+- Improve OCR & Table Extraction Accuracy
+- Enable Multi-PDF Comparative Query Handling
 
 ---
 
