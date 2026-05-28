@@ -200,24 +200,72 @@ if query:
 
         st.write(result["rewritten_query"])
 
-    # RETRIEVED CHUNKS
+# RETRIEVED CHUNKS
 
     with st.expander("📚 Retrieved Chunks"):
 
-        if result["docs"]:
+        if (
+            result["docs"]
+            and "Information not available"
+            not in result["answer"]
+        ):
+
+            shown_chunks = 0
 
             for i, doc in enumerate(result["docs"], start=1):
 
-                st.markdown(f"### Chunk {i}")
+                content = doc.page_content.strip()
 
-                st.write(doc.page_content[:1000])
+            # SKIP VERY SHORT / NOISY CHUNKS
+
+                if len(content) < 80:
+                    continue
+
+            # SKIP BENCHMARK CHUNKS
+
+                bad_patterns = [
+                "rag challenge",
+                "difficulty",
+                "multi-row filter",
+                "text retrieval",
+                "evaluation query",
+                "m1",
+                "e1",
+                "h1"
+                ]
+
+                lower_content = content.lower()
+
+                skip = False
+
+                for pattern in bad_patterns:
+
+                    if pattern in lower_content:
+
+                        skip = True
+                        break
+
+                if skip:
+                    continue
+
+                shown_chunks += 1
+
+                st.markdown(f"### Chunk {shown_chunks}")
+
+                st.write(content[:1000])
 
                 st.divider()
 
+            if shown_chunks == 0:
+
+                st.info(
+                    "No meaningful chunks retrieved."
+                )
+
         else:
 
-            st.warning(
-                "No retrieved chunks available."
+            st.info(
+                "No relevant chunks retrieved."
             )
 
     # STORE ASSISTANT MESSAGE

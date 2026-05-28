@@ -1,131 +1,132 @@
-from langchain_community.document_loaders import PyPDFLoader
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-
-from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_chroma import Chroma
-
-from src.table_extractor import extract_tables
-from src.ocr_extractor import extract_ocr_text
-
 import os
 
+from langchain_community.document_loaders import PyPDFLoader
+from langchain_chroma import Chroma
+from langchain_core.documents import Document
+from src.ingestion.chunker import split_documents
+from src.ingestion.embeddings import get_embeddings
+from src.ingestion.ocr_extractor import extract_ocr_text
+from src.ingestion.table_extractor import extract_tables
 
-PERSIST_DIRECTORY = "chroma_db_new"
+
+CHROMA_PATH = "chroma_db"
+DATA_PATH = "data"
+
+
+def load_documents():
+
+    documents = []
+
+    if not os.path.exists(DATA_PATH):
+        return documents
+
+    for file in os.listdir(DATA_PATH):
+
+        if not file.endswith(".pdf"):
+            continue
+
+        file_path = os.path.join(DATA_PATH, file)
+
+        # -----------------------------
+        # NORMAL PDF EXTRACTION
+        # -----------------------------
+
+        try:
+
+            loader = PyPDFLoader(file_path)
+
+            docs = loader.load()
+
+            for doc in docs:
+
+                doc.metadata["source"] = file
+
+            documents.extend(docs)
+
+        except Exception as e:
+
+            print(f"PDF Extraction Error: {e}")
+
+        # -----------------------------
+        # OCR EXTRACTION
+        # -----------------------------
+
+        try:
+
+            ocr_text = extract_ocr_text(file_path)
+
+            if ocr_text.strip():
+
+                documents.append(
+                    Document(
+                        page_content=ocr_text,
+                        metadata={
+                            "source": file,
+                            "type": "ocr"
+                        }
+                    )
+                )
+
+        except Exception as e:
+
+            print(f"OCR Error: {e}")
+
+        # -----------------------------
+        # TABLE EXTRACTION
+        # -----------------------------
+
+        try:
+
+            tables = extract_tables(file_path)
+
+            for table in tables:
+
+                documents.append(
+                    Document(
+                        page_content=table,
+                        metadata={
+                            "source": file,
+                            "type": "table"
+                        }
+                    )
+                )
+
+        except Exception as e:
+
+            print(f"Table Extraction Error: {e}")
+
+    return documents
 
 
 def initialize_vectorstore():
 
-    pdf_path = "data/Placement_RAG_Dataset_Enhanced.pdf"
+    embedding_function = get_embeddings()
 
-    # ---------------------------------------------------
-    # LOAD NORMAL PDF TEXT
-    # ---------------------------------------------------
+    # -----------------------------
+    # LOAD EXISTING DB
+    # -----------------------------
 
-    loader = PyPDFLoader(pdf_path)
+    if os.path.exists(CHROMA_PATH):
 
-    documents = loader.load()
-
-    # ---------------------------------------------------
-    # TABLE EXTRACTION
-    # ---------------------------------------------------
-
-    table_docs = extract_tables(
-        pdf_path
-    )
-
-    documents.extend(table_docs)
-
-    # ---------------------------------------------------
-    # OCR EXTRACTION
-    # ---------------------------------------------------
-
-    ocr_docs = extract_ocr_text(
-        pdf_path
-    )
-
-    documents.extend(ocr_docs)
-
-    # ---------------------------------------------------
-    # SMART CHUNKING
-    # ---------------------------------------------------
-
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=800,
-        chunk_overlap=150,
-        separators=[
-            "\n\n",
-            "\n",
-            ". ",
-            " "
-        ]
-    )
-
-    split_docs = text_splitter.split_documents(
-        documents
-    )
-
-    # ---------------------------------------------------
-    # METADATA TAGGING
-    # ---------------------------------------------------
-
-    companies = [
-        "Amazon",
-        "TCS",
-        "Infosys",
-        "Google",
-        "Microsoft",
-        "Wipro",
-        "Flipkart",
-        "Deloitte",
-        "IBM",
-        "HCL",
-        "Qualcomm",
-        "Samsung",
-        "Oracle",
-        "Adobe",
-        "SAP",
-        "Tech Mahindra",
-        "Capgemini",
-        "Cognizant",
-        "Accenture"
-    ]
-
-    for doc in split_docs:
-
-        content = doc.page_content.lower()
-
-        found_company = None
-
-        for company in companies:
-
-            if company.lower() in content:
-
-                found_company = company
-
-                break
-
-        doc.metadata["company"] = (
-            found_company
-            if found_company
-            else "Unknown"
+        vectordb = Chroma(
+            persist_directory=CHROMA_PATH,
+            embedding_function=embedding_function
         )
 
-    # ---------------------------------------------------
-    # EMBEDDINGS
-    # ---------------------------------------------------
+        return vectordb
 
-    embeddings = HuggingFaceEmbeddings(
-        model_name="sentence-transformers/all-MiniLM-L6-v2"
-    )
+    # -----------------------------
+    # CREATE NEW DB
+    # -----------------------------
 
-    # ---------------------------------------------------
-    # CREATE CHROMADB
-    # ---------------------------------------------------
+    documents = load_documents()
+
+    chunks = split_documents(documents)
 
     vectordb = Chroma.from_documents(
-        documents=split_docs,
-        embedding=embeddings,
-        persist_directory=PERSIST_DIRECTORY
+        documents=chunks,
+        embedding=embedding_function,
+        persist_directory=CHROMA_PATH
     )
 
     return vectordb

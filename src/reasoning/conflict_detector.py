@@ -1,97 +1,100 @@
-import re
+VALID_COMPANIES = [
 
-COMPANIES = [
-    "amazon",
-    "tcs",
-    "infosys",
-    "google",
-    "microsoft",
-    "wipro",
-    "flipkart",
-    "deloitte",
-    "ibm",
-    "hcl",
-    "qualcomm",
-    "samsung",
-    "oracle",
-    "adobe",
-    "sap",
-    "tech mahindra",
-    "capgemini",
-    "cognizant",
-    "accenture"
+    "TCS",
+    "Infosys",
+    "Deloitte",
+    "Accenture",
+    "Amazon",
+    "Flipkart",
+    "Google",
+    "Microsoft",
+    "Wipro",
+    "Cognizant",
+    "Capgemini",
+    "IBM",
+    "Adobe",
+    "Oracle",
+    "SAP",
+    "HCL",
+    "Tech",
+    "Qualcomm",
+    "Intel",
+    "Samsung"
 ]
 
-def extract_company(query):
-
-    query = query.lower()
-
-    for company in COMPANIES:
-
-        if company in query:
-            return company.title()
-
-    return None
 
 def detect_conflicts(query, docs):
 
-    target_company = extract_company(query)
+    query_lower = query.lower()
 
-    if not target_company:
+    # -----------------------------------------
+    # ONLY CHECK SPECIFIC QUERIES
+    # -----------------------------------------
+
+    allowed_queries = [
+        "conflict",
+        "cgpa",
+        "cutoff"
+    ]
+
+    should_check = False
+
+    for keyword in allowed_queries:
+
+        if keyword in query_lower:
+
+            should_check = True
+            break
+
+    if not should_check:
+
         return []
 
-    values = set()
+    # -----------------------------------------
+    # DETECT CONFLICTS
+    # -----------------------------------------
+
+    conflicts = []
 
     for doc in docs:
 
-        text = doc.page_content.lower()
+        content = doc.page_content
 
-        # ONLY CHECK TARGET COMPANY
+        for company in VALID_COMPANIES:
 
-        if target_company.lower() not in text:
-            continue
+            if company.lower() in content.lower():
 
-        # SPLIT INTO LINES
+                values = []
 
-        lines = text.split("\n")
+                words = content.split()
 
-        for line in lines:
-
-            # ONLY CGPA/CUTOFF RELATED LINES
-
-            if (
-                "cgpa" in line
-                or "cutoff" in line
-                or "eligibility" in line
-            ):
-
-                matches = re.findall(
-                    r'(\d+\.\d+)',
-                    line
-                )
-
-                for match in matches:
+                for word in words:
 
                     try:
 
-                        value = float(match)
+                        number = float(
+                            word.replace(
+                                ";", ""
+                            ).replace(
+                                ",", ""
+                            )
+                        )
 
-                        # VALID CGPA RANGE
-
-                        if 5.0 <= value <= 10.0:
-
-                            values.add(value)
+                        values.append(number)
 
                     except:
                         pass
 
-    # CONFLICT FOUND
+                unique_values = list(set(values))
 
-    if len(values) > 1:
+                if len(unique_values) > 2:
 
-        return [{
-            "company": target_company,
-            "values": sorted(list(values))
-        }]
+                    conflicts.append({
 
-    return []
+                        "company": company,
+
+                        "values": sorted(unique_values[:3])
+
+                    })
+
+    return conflicts

@@ -1,4 +1,6 @@
-from src.vectorstore.vectorstore import initialize_vectorstore
+from src.vectorstore.vectorstore import (
+    initialize_vectorstore
+)
 
 
 class MetadataRetriever:
@@ -9,31 +11,84 @@ class MetadataRetriever:
 
     def retrieve(self, query, company=None):
 
-        retriever = self.vectordb.as_retriever(
-            search_kwargs={"k": 8}
+        # -----------------------------------------
+        # RETRIEVE DOCUMENTS
+        # -----------------------------------------
+
+        results = self.vectordb.similarity_search_with_score(
+            query,
+            k=10
         )
 
-        docs = retriever.invoke(query)
+        filtered_docs = []
 
-        # METADATA FILTERING
+        query_lower = query.lower()
+
+        # -----------------------------------------
+        # BOOLEAN / ELIGIBILITY QUERIES
+        # -----------------------------------------
+
+        important_keywords = [
+            "backlog",
+            "bond",
+            "cgpa",
+            "package",
+            "offers",
+            "eligibility",
+            "allow"
+        ]
+
+        relaxed_mode = False
+
+        for keyword in important_keywords:
+
+            if keyword in query_lower:
+
+                relaxed_mode = True
+                break
+
+        # -----------------------------------------
+        # FILTER SCORES
+        # -----------------------------------------
+
+        for doc, score in results:
+
+            # LOWER SCORE = BETTER
+
+            if relaxed_mode:
+
+                # KEEP MORE DOCS
+                if score < 15:
+
+                    filtered_docs.append(doc)
+
+            else:
+
+                if score < 8:
+
+                    filtered_docs.append(doc)
+
+        # -----------------------------------------
+        # COMPANY FILTER
+        # -----------------------------------------
 
         if company:
 
-            filtered_docs = []
+            company_docs = []
 
-            for doc in docs:
+            for doc in filtered_docs:
 
                 content = doc.page_content.lower()
 
                 if company.lower() in content:
 
-                    filtered_docs.append(doc)
+                    company_docs.append(doc)
 
-            if filtered_docs:
+            if company_docs:
 
-                docs = filtered_docs
+                filtered_docs = company_docs
 
-        return docs
+        return filtered_docs
 
 
 def retrieve_documents(query, company=None):
@@ -43,7 +98,7 @@ def retrieve_documents(query, company=None):
     retriever = MetadataRetriever(vectordb)
 
     docs = retriever.retrieve(
-        query,
+        query=query,
         company=company
     )
 
