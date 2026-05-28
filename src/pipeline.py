@@ -178,7 +178,34 @@ def run_pipeline(query, vectordb):
     # REASONING
     # ---------------------------------------------------
 
-    if is_reasoning_query(rewritten_query):
+# ---------------------------------------------------
+# REASONING
+# ---------------------------------------------------
+
+    reasoning_keywords = [
+        "highest",
+        "compare",
+        "difference",
+        "versus",
+        "vs",
+        "better",
+        "rank"
+    ]
+
+    use_reasoning = False
+
+    for keyword in reasoning_keywords:
+
+        if keyword in rewritten_query.lower():
+
+            use_reasoning = True
+            break
+
+# ---------------------------------------------------
+# RUN REASONING ONLY FOR TRUE REASONING QUERIES
+# ---------------------------------------------------
+
+    if use_reasoning:
 
         reasoning_context = run_reasoning(
             rewritten_query,
@@ -200,28 +227,55 @@ def run_pipeline(query, vectordb):
         context = insert_context(
             refined_docs
         )
-
     # ---------------------------------------------------
     # EMPTY CONTEXT
     # ---------------------------------------------------
 
-    if not context.strip():
+        if not context.strip():
 
-        return {
-            "rewritten_query": rewritten_query,
-            "docs": [],
-            "answer": fallback_response(),
-            "sources": [],
-            "confidence": 0
-        }
+            return {
+                "rewritten_query": rewritten_query,
+                "docs": [],
+                "answer": fallback_response(),
+                "sources": [],
+                "confidence": 0
+            }
 
     # ---------------------------------------------------
-    # GENERATE ANSWER
-    # ---------------------------------------------------
+# LOAD MEMORY ONLY FOR GENERATION
+# ---------------------------------------------------
+
+    memory_context = ""
+
+    try:
+
+        from src.memory.memory import load_memory
+
+        memory_context = load_memory()
+
+    except:
+
+        memory_context = ""
+
+# ---------------------------------------------------
+# GENERATE ANSWER
+# MEMORY USED ONLY HERE
+# ---------------------------------------------------
+
+    generation_context = f"""
+    Conversation History:
+    {memory_context}
+
+    Retrieved Context:  
+    {context}
+
+    Current Query:
+    {rewritten_query}
+    """
 
     raw_answer = generate_answer(
         rewritten_query,
-        context
+        generation_context
     )
 
     # ---------------------------------------------------
