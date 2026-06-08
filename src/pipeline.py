@@ -29,6 +29,8 @@ from src.cache_manager import (
     set_cache
 )
 from tools.web_tool import search_web
+from tools.date_tool import get_current_date
+
 def run_pipeline(query, vectordb):
 
     # ---------------------------------------------------
@@ -56,6 +58,31 @@ def run_pipeline(query, vectordb):
     if not rewritten_query.strip():
 
         rewritten_query = query
+
+    # ---------------------------------------------------
+# DATE TOOL
+# ---------------------------------------------------
+
+    date_keywords = [
+    "today date",
+    "current date",
+    "date today",
+    "what is today's date",
+    "today's date"
+    ]
+
+    if any(
+        keyword in rewritten_query.lower()
+        for keyword in date_keywords
+    ):
+
+        return {
+        "rewritten_query": rewritten_query,
+        "docs": [],
+        "answer": get_current_date(),
+        "sources": ["Date Tool"],
+        "confidence": 100
+        }
 
     # ---------------------------------------------------
     # DETECT COMPANY
