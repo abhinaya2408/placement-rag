@@ -1,54 +1,36 @@
-from duckduckgo_search import DDGS
+from ddgs import DDGS
 
 
 def search_web(query):
 
     try:
 
-        with DDGS() as ddgs:
-
-            results = list(
-                ddgs.text(
-                    query,
-                    max_results=10
-                )
+        results = list(
+            DDGS().text(
+                query,
+                max_results=5
             )
+        )
 
         if not results:
-            return "No web results found."
+            return ""
 
-        query_words = query.lower().split()
-
-        best_result = None
-        best_score = -1
+        web_context = ""
 
         for result in results:
 
-            title = result.get("title", "").lower()
-            body = result.get("body", "").lower()
+            title = result.get("title", "")
+            body = result.get("body", "")
 
-            text = title + " " + body
+            web_context += (
+                f"Title: {title}\n"
+                f"Content: {body}\n\n"
+            )
 
-            score = 0
-
-            for word in query_words:
-
-                if word in text:
-                    score += 1
-
-            if score > best_score:
-                best_score = score
-                best_result = result
-
-        if best_result is None:
-            best_result = results[0]
-
-        return (
-            f"{best_result.get('title', '')}\n\n"
-            f"{best_result.get('body', '')}\n\n"
-            f"Source: {best_result.get('href', '')}"
-        )
+        return web_context
 
     except Exception as e:
 
-        return f"Web Search Error: {str(e)}"
+        print("Web Search Error:", e)
+
+        return ""

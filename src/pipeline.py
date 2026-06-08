@@ -109,9 +109,24 @@ def run_pipeline(query, vectordb):
 
     if not docs:
 
-        web_answer = search_web(
+        web_context = search_web(
             rewritten_query
         )
+
+        if web_context:
+
+            web_answer = generate_answer(
+                rewritten_query,
+                web_context
+            )
+
+            web_answer = format_response(
+                web_answer
+            )
+
+        else:
+
+            web_answer = "No relevant information found."
 
         return {
         "rewritten_query": rewritten_query,
@@ -160,18 +175,32 @@ def run_pipeline(query, vectordb):
 
     if not refined_docs:
 
-        web_answer = search_web(
+        web_context = search_web(
             rewritten_query
         )
 
-        return {
-            "rewritten_query": rewritten_query,
-            "docs": [],
-            "answer": web_answer,
-            "sources": ["Web Search"],
-            "confidence": 70
-        }
+        if web_context:
 
+            web_answer = generate_answer(
+                rewritten_query,
+                web_context
+            )
+
+            web_answer = format_response(
+                web_answer
+            )
+
+        else:
+
+            web_answer = "No relevant information found."
+
+        return {
+        "rewritten_query": rewritten_query,
+        "docs": [],
+        "answer": web_answer,
+        "sources": ["Web Search"],
+        "confidence": 70
+        }
     # ---------------------------------------------------
     # CONFLICT DETECTION
     # ---------------------------------------------------
@@ -294,16 +323,29 @@ def run_pipeline(query, vectordb):
     )
 
     if (
-        "information not available" in answer.lower()
-        or
-        "uploaded documents" in answer.lower()
+    "information not available" in answer.lower()
+    or
+    "uploaded documents" in answer.lower()
     ):
 
-        web_answer = search_web(
+        web_context = search_web(
             rewritten_query
         )
 
-        answer = web_answer
+        if web_context:
+
+            answer = generate_answer(
+                rewritten_query,
+                web_context
+            )
+
+            answer = format_response(
+            answer
+            )
+
+        # if web_context:
+
+        #     answer = web_context
 
     # ---------------------------------------------------
     # APPEND CONFLICT WARNINGS
