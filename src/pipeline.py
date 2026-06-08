@@ -28,25 +28,24 @@ from src.cache_manager import (
     get_cache,
     set_cache
 )
-
-
+from tools.web_tool import search_web
 def run_pipeline(query, vectordb):
 
     # ---------------------------------------------------
     # CACHE CHECK
     # ---------------------------------------------------
 
-    cached_response = get_cache(query)
+    # cached_response = get_cache(query)
 
-    if cached_response:
+    # if cached_response:
 
-        return {
-            "rewritten_query": query,
-            "docs": [],
-            "answer": cached_response,
-            "sources": [],
-            "confidence": 95
-        }
+    #     return {
+    #         "rewritten_query": query,
+    #         "docs": [],
+    #         "answer": cached_response,
+    #         "sources": [],
+    #         "confidence": 95
+    #     }
 
     # ---------------------------------------------------
     # QUERY REWRITE
@@ -110,12 +109,16 @@ def run_pipeline(query, vectordb):
 
     if not docs:
 
+        web_answer = search_web(
+            rewritten_query
+        )
+
         return {
-            "rewritten_query": rewritten_query,
-            "docs": [],
-            "answer": fallback_response(),
-            "sources": [],
-            "confidence": 0
+        "rewritten_query": rewritten_query,
+        "docs": [],
+        "answer": web_answer,
+        "sources": ["Web Search"],
+        "confidence": 70
         }
 
     # ---------------------------------------------------
@@ -157,12 +160,16 @@ def run_pipeline(query, vectordb):
 
     if not refined_docs:
 
+        web_answer = search_web(
+            rewritten_query
+        )
+
         return {
             "rewritten_query": rewritten_query,
             "docs": [],
-            "answer": fallback_response(),
-            "sources": [],
-            "confidence": 0
+            "answer": web_answer,
+            "sources": ["Web Search"],
+            "confidence": 70
         }
 
     # ---------------------------------------------------
@@ -286,6 +293,18 @@ def run_pipeline(query, vectordb):
         raw_answer
     )
 
+    if (
+        "information not available" in answer.lower()
+        or
+        "uploaded documents" in answer.lower()
+    ):
+
+        web_answer = search_web(
+            rewritten_query
+        )
+
+        answer = web_answer
+
     # ---------------------------------------------------
     # APPEND CONFLICT WARNINGS
     # ---------------------------------------------------
@@ -323,10 +342,10 @@ def run_pipeline(query, vectordb):
     # SAVE CACHE
     # ---------------------------------------------------
 
-    set_cache(
-        query,
-        answer
-    )
+    # set_cache(
+    #     query,
+    #     answer
+    # )
 
     # ---------------------------------------------------
     # SOURCES
