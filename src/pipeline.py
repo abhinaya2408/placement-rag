@@ -30,6 +30,7 @@ from src.cache_manager import (
 )
 from tools.web_tool import search_web
 from tools.date_tool import get_current_date
+from tools.calculator_tool import calculate
 
 def run_pipeline(query, vectordb):
 
@@ -83,6 +84,35 @@ def run_pipeline(query, vectordb):
         "sources": ["Date Tool"],
         "confidence": 100
         }
+    
+    # ---------------------------------------------------
+# CALCULATOR TOOL
+# ---------------------------------------------------
+
+    math_symbols = [
+        "+",
+    "-",
+    "*",
+    "/",
+    "%"
+    ]
+
+    if any(
+        symbol in rewritten_query
+        for symbol in math_symbols
+    ):
+
+        result = calculate(
+            rewritten_query
+        )
+
+    return {
+        "rewritten_query": rewritten_query,
+        "docs": [],
+        "answer": result,
+        "sources": ["Calculator Tool"],
+        "confidence": 100
+    }
 
     # ---------------------------------------------------
     # DETECT COMPANY
