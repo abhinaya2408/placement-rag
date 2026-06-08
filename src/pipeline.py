@@ -31,6 +31,7 @@ from src.cache_manager import (
 from tools.web_tool import search_web
 from tools.date_tool import get_current_date
 from tools.calculator_tool import calculate
+from tools.sql_tool import execute_query
 
 def run_pipeline(query, vectordb):
 
@@ -106,13 +107,14 @@ def run_pipeline(query, vectordb):
             rewritten_query
         )
 
-    return {
+        return {
         "rewritten_query": rewritten_query,
         "docs": [],
         "answer": result,
         "sources": ["Calculator Tool"],
         "confidence": 100
-    }
+        }
+
 
     # ---------------------------------------------------
     # DETECT COMPANY
@@ -151,6 +153,44 @@ def run_pipeline(query, vectordb):
 
             break
 
+    if "eligibility" in rewritten_query.lower():
+
+        for company in companies.values():
+
+            if company.lower() in rewritten_query.lower():
+
+                rows = execute_query(
+                    f"""
+                    SELECT *
+                    FROM eligibility
+                    WHERE company='{company}'
+                    """
+                )
+
+                if rows:
+
+                    row = rows[0]
+
+                    result = f"""
+                    Company: {row[0]}
+                    Minimum CGPA: {row[1]}
+                    Allowed Backlogs: {row[2]}
+                    Package: {row[3]} LPA
+                    Bond: {row[4]} Year(s)
+                    Tech Focus: {row[5]}
+                    """
+
+                else:
+
+                    result = "No data found."
+
+                return {
+                    "rewritten_query": rewritten_query,
+                    "docs": [],
+                    "answer": str(result),
+                    "sources": ["MySQL"],
+                    "confidence": 100
+                }
     # ---------------------------------------------------
     # RETRIEVAL
     # ---------------------------------------------------

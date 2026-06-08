@@ -1,13 +1,23 @@
-import mysql.connector
+from tools.db_connection import get_connection
 
 
-def get_connection():
+def execute_query(query):
 
-    connection = mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="Abhi@2408",
-        database="placement_db"
-    )
+    try:
 
-    return connection
+        conn = get_connection()
+
+        cursor = conn.cursor()
+
+        cursor.execute(query)
+
+        rows = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+
+        return rows
+
+    except Exception as e:
+
+        return str(e)
